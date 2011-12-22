@@ -1,0 +1,4 @@
+- Wizard to manage questionnaire
+- implement django-birt to export questionnaire results
+- javascript validation
+- mode templatetags
