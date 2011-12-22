@@ -1,0 +1,84 @@
+{% load sekizai_tags questionnaire_tags %}
+{{ evento.nome }}<br/>
+{{ evento.luogo }}<br/>
+{{ evento.abstract }}<br/>
+<hr>
+
+{% for questionario in  evento.questionari.all %}
+   
+        <h4>{{ questionario.titolo}}</h4>
+     <div>
+     <form action="/questionnaire/salva/" method="post" >{% csrf_token %}
+azienda loggata:     <input type="text" readonly="readonly" name="azienda" value="1"><br>
+     <ol>
+    {% for domanda in questionario.domanda_set.all|dictsort:"numero" %}
+    
+      
+             <li> {{ domanda.domanda }}<br/>
+               
+                {% if domanda.tipo == "0" %} <!-- domanda chiusa --> 
+               <ul>
+                    {% for risposta in domanda.risposta_chiusa_set.all %}
+                        
+                     <li> 
+                     
+                     {% if risposta.boolean %}
+                        <input name="{{questionario.id}}#{{domanda.id}}" value="{{risposta.id}}#1" type="radio" /> Si
+                        <input name="{{questionario.id}}#{{domanda.id}}" value="{{risposta.id}}#0" type="radio" /> No
+                     {% else %}
+                     
+                     
+                     
+                     
+                                 {% if domanda.multiple  %}
+                                  <input name="{{questionario.id}}#{{domanda.id}}" value="{{risposta.id}}" type="checkbox" /> 
+                                {% else %}
+                               
+                                    <input name="{{questionario.id}}#{{domanda.id}}" value="{{risposta.id}}" type="radio" /> 
+            
+                               {% endif %}
+                   {% endif %}
+                   
+                   
+                   
+                   
+                   
+                   {{ risposta.testo }}
+                   
+                   
+                   
+                   
+                   </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                
+                
+                 {% if domanda.tipo == "2" %} <!-- domanda rage --> 
+               <ul>
+                    {% for risposta in domanda.risposta_chiusa_set.all   %}
+                        
+                     <li> {{ risposta.testo }}
+                        {% printRange risposta.range.id domanda.id questionario.id risposta.id %}                    
+                   
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+        
+        
+                {% if domanda.tipo == "1" %} <!-- domanda aperta --> 
+                    {% for risposta in domanda.risposta_aperta_set.all %}
+                      <textarea name="{{questionario.id}}#{{domanda.id}}" ></textarea>
+                      <input type="hidden" name="id_risposta#{{questionario.id}}#{{domanda.id}}" value="{{risposta.id}}" />
+                    {% endfor %}
+                {% endif %}
+       </li>
+       
+    {% endfor %}
+    </ol>
+    <input type="submit" value="Salva" />
+    </form>
+ </div>
+{% endfor %}
