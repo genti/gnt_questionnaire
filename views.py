@@ -20,53 +20,78 @@ from django.template import (Node, Variable, TemplateSyntaxError,TokenParser, Li
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
 def salva(request):
-    azienda = get_object_or_404(Azienda,pk__exact=request.POST.get('azienda',False))
-    #assert False
-    #return render_to_response('gnt_poll/questionario_results.html', {'post':request.POST}, context_instance=RequestContext(request))
+    
+    azienda = get_object_or_404(Azienda,pk__exact=request.session.get('azienda', False))
+    
+    domandePostate=0;
 
-    for item in request.POST:
+
+    questionario=Questionario.objects.get(pk__exact=request.POST.get('questionario_obj_id',False))
+   
+    tmp=Domanda.objects.filter(questionario=questionario).filter(tipo=0).filter(multiple=True)
+    Risultati.objects.filter(questionario=questionario,azienda=azienda,domanda__in=tmp).delete()
+        
+
+    
+    
+    for (counter,item) in enumerate(request.POST):
         ids=item.split('#')
         
+               
+       
         if(len(ids)==2):
             id_questionario=ids[0]
             id_domanda=ids[1]
         
         if(len(ids)==3):
-           
+            
             id_questionario=ids[0]
             id_domanda=ids[1]
             id_risposta=ids[2]
                         
         if(len(ids)>=2):
-        
+            
+            
+            
+            
+            
+            
+           #  if counter == 0:
+# 
+#                 tmp=Domanda.objects.filter(questionario=questionario).filter(tipo=0).filter(multiple=True)
+#                 Risultati.objects.filter(questionario=questionario,azienda=azienda,domanda__in=tmp).delete()
+            
+           
+                      
             domanda=get_object_or_404(Domanda,pk__exact=id_domanda)
+            
+            
+            if int(domanda.tipo) != 1: 
+                
+                domandePostate = domandePostate+1
+
+            
+                     
             '''
                 risposta chiusa
-            
             '''
-            if domanda.tipo == "0": #domanda chiusa
-                
-                            
-                if domanda.multiple == 1:
-                    
+                      
+            if int(domanda.tipo) == 0: #domanda chiusa
+                if domanda.multiple:
                     risposte=request.POST.getlist(item)
                     for risposta in risposte:
                         try:
                             risposta_chiusa=Risposta_chiusa.objects.get(id__exact=risposta)
                         except:
                             assert False, risposta
-                            
-                        risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_chiusa=risposta_chiusa)
+                        risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_chiusa=risposta_chiusa,questionario=questionario)
                         risultato.testo=str(risposta)
-                        risultato.save()
 
-                
-                
-                
+                        risultato.save()
+                        
+                        
                 else:
-                
                     risposta=request.POST.get(item,False)
-                    
                     try:
                         risposta_chiusa=Risposta_chiusa.objects.get(id__exact=risposta)
                     except: #boolean
@@ -76,44 +101,90 @@ def salva(request):
                             risposta=risposta_splitted[1]
                         except:
                             raise TemplateSyntaxError("Errore nel salvataggio risposta chiusa. Name: %s Value: %s " % (item, risposta))
-
-                    risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_chiusa=risposta_chiusa)
+                    risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_chiusa=risposta_chiusa,questionario=questionario)
                     risultato.testo=str(risposta)
-                    risultato.save()
- 
+
+                   
                     
-        
+                    risultato.save()
             '''
             risposta di tipo range
-            
             nome del campo =  questionario#domanda#risposta 
             valore = valore nel range
             '''
-            if domanda.tipo == '2': #range
-                
+
+            if int(domanda.tipo) == 2: #range
                 risposta=request.POST.get(item,False)
                 try:
                     risposta_chiusa=Risposta_chiusa.objects.get(id__exact=ids[2])
                 except:
                     assert False, risposta
-                    
-                risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_chiusa=risposta_chiusa)
+                risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_chiusa=risposta_chiusa,questionario=questionario)
                 risultato.testo=str(risposta)
                 risultato.save()
+
             '''
                 risposta aperta
-            
             '''
-            if domanda.tipo == '1': 
-        
-                name_risposta='id_risposta#%s' % item
-                id_risposta=request.POST[name_risposta]
+
+            if int(domanda.tipo) == 1: 
+
                 
                 risposta_aperta=get_object_or_404(Risposta_aperta,id__exact=int(id_risposta))
                 
-                risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_aperta=risposta_aperta)
+                risultato, created = Risultati.objects.get_or_create(azienda=azienda,domanda=domanda,risposta_aperta=risposta_aperta,questionario=questionario)
                 risultato.testo=str(request.POST.get(item,''))
+                if risultato.testo != '': 
+                    domandePostate = domandePostate+1
+
                 risultato.save()
-                    
+
+         
+         
+         
+            '''
+                risposta modulare
+            '''
+
+            if int(domanda.tipo) == 3: 
+                checkedFirst=False
+                risposta_aperta=get_object_or_404(Risposta_aperta,id__exact=int(id_risposta))
+                Risultati.objects.filter(questionario=questionario,azienda=azienda,domanda=domanda,risposta_aperta=risposta_aperta).delete()
                 
-    return render_to_response('questionnaire/questionario_results.html', {'post':request.POST}, context_instance=RequestContext(request))
+                for clustered in request.POST.getlist(item):
+                    
+                    if str(clustered) != '': 
+                        
+                        risultato = Risultati(azienda=azienda,domanda=domanda,risposta_aperta=risposta_aperta,questionario=questionario,risposta_aperta_cluster=risposta_aperta)
+                        
+                       
+                   
+                        risultato.testo=str(clustered)
+                        if not checkedFirst:
+                            domandePostate = domandePostate+1
+                            checkedFirst=True
+        
+                        risultato.save()
+
+                
+#   check del totale dei risultati
+#   totDomande=0;
+     
+    if questionario:
+        totDomande = len(questionario.domanda_set.all())
+        obj,created= GestoreQuestionari.objects.get_or_create(azienda=azienda,questionario=questionario)
+    
+    
+        if domandePostate == totDomande:
+           #questionario completo
+           obj.status=2
+        else:
+            #questionario parziale
+            obj.status=1
+        obj.save()
+        
+        
+    #assert False, "%s su %s" % (domandePostate,totDomande)
+
+    return HttpResponseRedirect(request.META['HTTP_REFERER']);            
+    #return render_to_response('questionnaire/questionario_results.html', {'post':request.POST}, context_instance=RequestContext(request))

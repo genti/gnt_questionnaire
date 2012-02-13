@@ -2,19 +2,23 @@ from django.db import models
 from django.template.defaultfilters import slugify
 import datetime
 from django.utils.translation import ugettext_lazy as _
-from localsite.models import Azienda
+from localsite.models import *
 from django.db.models import signals
-
+from tinymce import models as tinymce_models
+from tinymce.widgets import TinyMCE
 
 ANSWER_TYPE = (
         ('0', 'Chiusa'),
         ('1', 'Aperta'),
         ('2', 'Range'),
+        ('3', 'Modulare'),
     )
 
 class Questionario(models.Model):
     titolo = models.CharField(_('Titolo'),max_length=200)
-    
+    intro=models.TextField(_('Introduzione'))
+    #custom field to tisplay scrollable textarea
+    long_intro=models.TextField(_('Introduzione lunga'))
     published = models.BooleanField(_('Pubblicato'),default=True)
     published_on = models.DateTimeField(_('Data'),auto_now=True, auto_now_add=True,blank=True)
     
@@ -60,7 +64,7 @@ class Risposta_chiusa(models.Model):
 
 
 class Risposta_aperta(models.Model):
-    #testo=models.TextField(_('Risposta'),blank=True, null=True) 
+   
    
     domanda = models.ForeignKey('Domanda')
     
@@ -70,7 +74,7 @@ class Risposta_aperta(models.Model):
     published_on = models.DateTimeField(auto_now=True, auto_now_add=True,blank=True,verbose_name=_('Data'))
 
     def __unicode__(self):
-        return 'risposta #%s' % self.id
+        return '%s, domanda n. %s' % (self.domanda.questionario.titolo,self.domanda.numero)
     class Meta:
         verbose_name_plural = _('Risposte aperte')
 
@@ -87,11 +91,9 @@ class Domanda(models.Model):
     
     published = models.BooleanField(_('Pubblicato'),default=True)
     published_on = models.DateTimeField(auto_now=True, auto_now_add=True,blank=True,verbose_name=_('Data'))
-    
-    slug = models.SlugField();
-    
+        
     def __unicode__(self):
-        return "%s - %s" % (self.questionario.titolo,self.domanda[:30])
+        return "%s - domanda n. %s" % (self.questionario.titolo,self.numero)
     class Meta:
         verbose_name_plural = _('Domande')
 
@@ -100,13 +102,15 @@ class Domanda(models.Model):
 class Risultati(models.Model):
     azienda = models.ForeignKey('localsite.Azienda')
     
+    questionario=models.ForeignKey('Questionario',blank=True, null=True)
     domanda = models.ForeignKey('Domanda',blank=True, null=True)
-    risposta_aperta = models.ForeignKey('Risposta_aperta',blank=True, null=True)
-    risposta_chiusa = models.ForeignKey('Risposta_chiusa',blank=True, null=True)
+    risposta_aperta = models.ForeignKey('Risposta_aperta',blank=True, null=True,related_name="Risposta aperta")
+    risposta_aperta_cluster = models.ForeignKey('Risposta_aperta',blank=True, null=True,related_name="Risposta aperta mod")
+    risposta_chiusa = models.ForeignKey('Risposta_chiusa',blank=True, null=True,related_name="Risposta chiusa")
     testo = models.TextField(_('Testo risposta aperta'),blank=True, null=True)
     
     def __unicode__(self):
-        return "%s - %s" % (self.questionario.titolo,self.azienda.nome)
+        return "%s - %s" % (self.questionario.titolo,self.azienda.anagrafica.nome)
     class Meta:
         verbose_name_plural = _('Risultati')
 

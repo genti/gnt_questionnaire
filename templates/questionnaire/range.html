@@ -1,3 +1,5 @@
+<p>
 {% for i in new_range %}
-{{i}} <input type="radio" name="{{id_questionario}}#{{id_domanda}}#{{id_risposta}}" value="{{i}}" />
+{{i}} <input type="radio" {% if result == i %} checked="checked" {% endif %} name="{{id_questionario}}#{{id_domanda}}#{{id_risposta}}" value="{{i}}" />
 {% endfor %}
+</p>

@@ -9,8 +9,12 @@ def manage_domanda_type(sender, **kwargs):
     domanda = kwargs.get("instance", None)
     created = kwargs.get("created", None)
     if created:
-        ra=Risposta_aperta(domanda=domanda)
-        ra.save();   
+        if domanda.tipo == '1':
+            ra=Risposta_aperta(domanda=domanda)
+            ra.save();   
+        if domanda.tipo == '3':
+            ra=Risposta_aperta(domanda=domanda)
+            ra.save();   
            
 @receiver(pre_save, sender=Domanda)
 def manage_domanda_order(sender, **kwargs):
@@ -24,16 +28,25 @@ def manage_domanda_order(sender, **kwargs):
             domanda.numero=0
         
         
-# @receiver(post_save, sender=CustomerContact)
-# def log_new_customer_contact(sender, **kwargs):
-#     cc = kwargs.get("instance", None)
-#     created = kwargs.get("created", None)
-# #     if created:
-# #         logging.getLogger('contacts').debug("new customer contact: %s on %s" % (cc.contact.email, cc.customer.name))
+# @receiver(post_save, sender=Risultati)
+# def checkQuestionarioStatus(sender, **kwargs):
+#     risultati_obj = kwargs.get("instance", None)
+#     
+#     for domanda in questionario.domanda_set.all():
+#     
+#         if domanda.tipo = 0:
+#             totRisposteChiuse += len(domanda.risposta_chiusa_set.all())
 #         
-# @receiver(post_save, sender=ContactMailingStatus)
-# def log_new_contact_mailing_status(sender, **kwargs):
-#     cms = kwargs.get("instance", None)
-#     created = kwargs.get("created", None)
-# #     if created:
-# #         logging.getLogger('sending').debug("new status for nl %s: %s %s" % (cms.newsletter.slug, cms.contact.email, cms.status ))
+#         if domanda.tipo == 1
+#             totRisposteAperte += len(domanda.risposta_aperta_set.all())
+#         
+#         if domanda.tipo == 2
+#             totRisposteRange += 1
+#             
+#     
+#     
+#     TOTrisposte=totRisposteChiuse+totRisposteAperte+totRisposteRange
+    
+    
+
+
